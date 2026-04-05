@@ -1,35 +1,99 @@
-<script>
-function analyze(){
-    let link = document.getElementById("link").value;
-    let image = document.getElementById("image").files[0];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Reaction Analyzer v4</title>
 
-    if(link === "" || !image){
-        alert("Please enter link and image");
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #0d1b2a;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    background: #1b263b;
+    padding: 25px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+}
+
+input, button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 10px;
+    border: none;
+}
+
+button {
+    background: #2ecc71;
+    color: white;
+    font-weight: bold;
+}
+
+#result {
+    margin-top: 20px;
+    font-size: 18px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>🤖 AI Reaction Analyzer v4</h2>
+
+    <input type="text" id="link" placeholder="Paste WhatsApp link">
+
+    <input type="file" id="imageInput">
+
+    <button onclick="analyze()">Run AI Scan</button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+function analyze() {
+    let link = document.getElementById("link").value;
+    let file = document.getElementById("imageInput").files[0];
+    let result = document.getElementById("result");
+
+    if (!link || !file) {
+        alert("Please enter link and upload image");
         return;
     }
 
-    document.getElementById("result").innerHTML = "🔍 Scanning for bot activity...";
+    let score = 0;
 
-    setTimeout(() => {
+    // Simulated detection logic
+    if (link.includes("whatsapp")) score += 20;
+    if (file.name.toLowerCase().includes("screenshot")) score += 20;
+    if (file.name.length > 12) score += 15;
 
-        // Simulated AI detection
-        let randomScore = Math.floor(Math.random() * 100);
+    // Random AI behavior simulation
+    score += Math.floor(Math.random() * 50);
 
-        let resultText = "";
+    let message = "";
 
-        if(randomScore > 70){
-            resultText = "⚠️ High Bot Activity Detected 🤖<br>Reactions appear artificially boosted.";
-        } 
-        else if(randomScore > 40){
-            resultText = "⚠️ Suspicious Activity Detected 🤔<br>Some reactions may be from bots.";
-        } 
-        else {
-            resultText = "✅ Authentic Engagement 👍<br>Reactions appear natural and real.";
-        }
+    if (score >= 70) {
+        message = "⚠️ Bot-like reactions detected<br>Confidence: " + score + "%";
+    } else if (score >= 40) {
+        message = "🤔 Suspicious activity detected<br>Confidence: " + score + "%";
+    } else {
+        message = "✅ Real user reactions<br>Confidence: " + score + "%";
+    }
 
-        document.getElementById("result").innerHTML =
-        "<b>AI Confidence Score:</b> " + randomScore + "%<br><br>" + resultText;
-
-    }, 2000);
+    result.innerHTML = message;
 }
 </script>
+
+</body>
+</html>
