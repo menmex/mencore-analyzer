@@ -1,69 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mencore AI Dashboard</title>
-
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body {
-    background: #0a0f1c;
-    color: #00ffcc;
-    font-family: monospace;
-    text-align: center;
-}
-
-.container {
-    margin-top: 20px;
-}
-
-img {
-    max-width: 80%;
-    border: 1px solid #00ffcc;
-}
-
-button {
-    padding: 10px;
-    background: #00ffcc;
-    border: none;
-    cursor: pointer;
-}
-
-.dashboard {
-    margin-top: 20px;
-    display: none;
-}
-
-.box {
-    border: 1px solid #00ffcc;
-    padding: 15px;
-    margin: 10px;
-}
-</style>
-</head>
-
-<body>
-
-<div class="container">
-<h2>🟢 Mencore AI Dashboard</h2>
-
-<input type="file" id="imageInput"><br><br>
-<img id="preview"><br><br>
-
-<button onclick="runOCR()">SCAN IMAGE</button>
-
-<div id="loading">⚡ AI scanning...</div>
-
-<div class="dashboard" id="dashboard">
-
-<div class="box" id="verdictBox"></div>
-
-<canvas id="chart" width="300" height="300"></canvas>
-
-</div>
 
 </div>
 
@@ -71,92 +5,161 @@ button {
 
 let imageFile;
 
-document.getElementById("imageInput").addEventListener("change", function(e){
-    imageFile = e.target.files[0];
-    let reader = new FileReader();
-    reader.onload = () => document.getElementById("preview").src = reader.result;
-    reader.readAsDataURL(imageFile);
-});
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mencore AI Dashboard</title>
 
-function clean(text){
-    return text.replace(/\n/g," ").replace(/[^0-9❤️👍😂😮😢🔥 ]/g,"");
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+    background:#0a0f1c;
+    color:#00ffc3;
+    font-family:monospace;
+    text-align:center;
+    padding:20px;
+}
+h1{color:#00ffc3;}
+
+.box{
+    border:1px solid #00ffc3;
+    padding:15px;
+    margin:10px;
+    border-radius:10px;
 }
 
-function find(text, emoji){
-    let i = text.indexOf(emoji);
-    if(i === -1) return 0;
-    let part = text.substring(i, i+15);
-    let num = part.match(/\d+/);
-    return num ? parseInt(num[0]) : 0;
+button{
+    background:#00ffc3;
+    border:none;
+    padding:15px;
+    font-weight:bold;
+    cursor:pointer;
 }
 
-function runOCR(){
-    if(!imageFile){
+#loading{
+    display:none;
+    font-size:18px;
+    color:yellow;
+}
+
+#result{
+    margin-top:20px;
+    font-size:18px;
+}
+
+canvas{
+    margin-top:20px;
+    background:#fff;
+    border-radius:10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🟢 Mencore AI Dashboard</h1>
+
+<input type="file" id="imageInput"><br><br>
+
+<button onclick="analyze()">⚡ SCAN IMAGE</button>
+
+<div id="loading">⚡ Scanning with Ultra AI...</div>
+
+<div id="result"></div>
+
+<canvas id="chart"></canvas>
+
+<script>
+
+async function analyze(){
+
+    const file = document.getElementById("imageInput").files[0];
+    if(!file){
         alert("Upload image first");
         return;
     }
 
-    document.getElementById("loading").innerText = "⚡ Scanning...";
-    document.getElementById("dashboard").style.display = "none";
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("result").innerHTML = "";
 
-    Tesseract.recognize(imageFile,'eng').then(({ data: { text } }) => {
+    const img = URL.createObjectURL(file);
 
-        let t = clean(text);
-
-        let love = find(t,"❤️");
-        let like = find(t,"👍");
-        let laugh = find(t,"😂");
-        let wow = find(t,"😮");
-        let sad = find(t,"😢");
-
-        let arr = [love, like, laugh, wow, sad];
-
-        if(arr.every(v => v === 0)){
-            let nums = t.match(/\d+/g) || [];
-            nums = nums.map(Number);
-            love = nums[0] || 0;
-            like = nums[1] || 0;
-            laugh = nums[2] || 0;
-            wow = nums[3] || 0;
-            sad = nums[4] || 0;
+    const { data: { text } } = await Tesseract.recognize(
+        img,
+        'eng',
+        {
+            logger: m => console.log(m)
         }
+    );
 
-        let total = love + like + laugh + wow + sad;
-        let lovePercent = total ? (love/total)*100 : 0;
+    console.log("OCR TEXT:", text);
 
-        let verdict = "";
+    // Extract numbers
+    const numbers = text.match(/\d+/g);
 
-        if(lovePercent >= 80){
-            verdict = "⚠️ BOT-LIKE MIX DETECTED";
-        } else if(lovePercent >= 50){
-            verdict = "🤔 SUSPICIOUS ENGAGEMENT";
-        } else {
-            verdict = "✅ ORGANIC REACTIONS";
+    if(!numbers || numbers.length < 3){
+        document.getElementById("result").innerHTML =
+        "❌ Could not detect reactions properly";
+        document.getElementById("loading").style.display = "none";
+        return;
+    }
+
+    // Assign values based on WhatsApp layout
+    let love = parseInt(numbers[1]) || 0;
+    let like = parseInt(numbers[2]) || 0;
+    let laugh = parseInt(numbers[3]) || 0;
+    let wow = parseInt(numbers[4]) || 0;
+    let sad = parseInt(numbers[5]) || 0;
+    let pray = parseInt(numbers[6]) || 0;
+
+    let total = love + like + laugh + wow + sad + pray;
+
+    let lovePercent = (love / total) * 100;
+
+    let resultText = "";
+
+    if(lovePercent >= 80){
+        resultText = "⚠️ BOT-LIKE PATTERN DETECTED (Love unusually high)";
+    } else {
+        resultText = "✅ Organic / Mixed reactions";
+    }
+
+    document.getElementById("loading").style.display = "none";
+
+    document.getElementById("result").innerHTML = `
+        <div class="box">
+        <b>Total:</b> ${total}<br><br>
+
+        ❤️ Love: ${love}<br>
+        👍 Like: ${like}<br>
+        😂 Laugh: ${laugh}<br>
+        😮 Wow: ${wow}<br>
+        😢 Sad: ${sad}<br>
+        🙏 Pray: ${pray}<br><br>
+
+        <b>Love %:</b> ${lovePercent.toFixed(2)}%<br><br>
+
+        <b>${resultText}</b>
+        </div>
+    `;
+
+    // Draw Chart
+    const ctx = document.getElementById('chart');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['❤️','👍','😂','😮','😢','🙏'],
+            datasets: [{
+                label: 'Reactions',
+                data: [love, like, laugh, wow, sad, pray]
+            }]
         }
-
-        document.getElementById("loading").innerText = "✅ Done";
-
-        document.getElementById("verdictBox").innerHTML = `
-        <h3>${verdict}</h3>
-        Total: ${total}<br>
-        Love %: ${lovePercent.toFixed(1)}%
-        `;
-
-        document.getElementById("dashboard").style.display = "block";
-
-        // Chart
-        new Chart(document.getElementById("chart"), {
-            type: 'bar',
-            data: {
-                labels: ["❤️","👍","😂","😮","😢"],
-                datasets: [{
-                    label: "Reactions",
-                    data: [love, like, laugh, wow, sad]
-                }]
-            }
-        });
-
     });
+
 }
 
 </script>
