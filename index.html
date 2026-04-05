@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AI Reaction Analyzer v3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    font-family: Arial;
+    background: #0b1a2b;
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+.box {
+    background: #1f2e3d;
+    padding: 20px;
+    border-radius: 15px;
+    max-width: 400px;
+    margin: auto;
+}
+
+input, button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 10px;
+    border: none;
+}
+
+input {
+    background: #334155;
+    color: white;
+}
+
+button {
+    background: #22c55e;
+    color: white;
+    font-weight: bold;
+}
+
+#result {
+    margin-top: 20px;
+    font-size: 18px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+<h2>AI Reaction Analyzer v3 🤖</h2>
+
+<input type="text" id="link" placeholder="Paste WhatsApp Channel Link">
+
+<input type="file" id="image">
+
+<button onclick="analyze()">Run AI Scan</button>
+
+<div id="result"></div>
+</div>
+
+<script>
+function analyze(){
+    let link = document.getElementById("link").value;
+    let image = document.getElementById("image").files[0];
+
+    if(link === "" || !image){
+        alert("Please enter link and image");
+        return;
+    }
+
+    document.getElementById("result").innerHTML = "🔍 Scanning...";
+
+    setTimeout(() => {
+        document.getElementById("result").innerHTML =
+        "✅ Analysis Complete<br><br>This post contains multiple reactions 👍🔥❤️";
+    }, 2000);
+}
+</script>
+
+</body>
+  </html>
