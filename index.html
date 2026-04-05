@@ -4,10 +4,7 @@
 <meta charset="UTF-8">
 <title>Mencore AI Dashboard</title>
 
-<!-- OCR Library -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-
-<!-- Chart.js for graphs -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -23,13 +20,6 @@ h1{
     color:#00ffc3;
 }
 
-.box{
-    border:2px solid #00ffc3;
-    padding:10px;
-    margin:10px;
-    border-radius:10px;
-}
-
 button{
     background:#00ffc3;
     border:none;
@@ -43,9 +33,16 @@ button{
     margin-top:10px;
 }
 
-canvas{
-    background:#111;
+.box{
+    border:2px solid #00ffc3;
+    padding:15px;
     margin-top:20px;
+    border-radius:10px;
+}
+
+canvas{
+    margin-top:20px;
+    background:#111;
 }
 </style>
 </head>
@@ -66,8 +63,12 @@ canvas{
 
 <script>
 
+let chartInstance = null;
+
 async function scanImage(){
+
     const file = document.getElementById("imageInput").files[0];
+
     if(!file){
         alert("Upload image first!");
         return;
@@ -78,60 +79,76 @@ async function scanImage(){
     const { data:{ text } } = await Tesseract.recognize(
         file,
         'eng',
-        {
-            logger: m => console.log(m)
-        }
+        { logger: m => console.log(m) }
     );
 
-    console.log(text);
+    console.log("OCR TEXT:", text);
 
     analyze(text);
 }
 
 function analyze(text){
 
-    // CLEAN TEXT
     text = text.replace(/\n/g, " ");
 
-    // EXTRACT TOTAL REACTIONS
+    // GET TOTAL REACTIONS (TOP NUMBER)
     let totalMatch = text.match(/(\d+)\s*reactions/i);
     let total = totalMatch ? parseInt(totalMatch[1]) : 0;
 
-    // EXTRACT EMOJIS
-    let love = extract(text, "❤️") || extract(text, "❤");
-    let like = extract(text, "👍");
-    let laugh = extract(text, "😂");
-    let wow = extract(text, "😮");
-    let sad = extract(text, "😢");
-    let pray = extract(text, "🙏");
+    // GET ALL NUMBERS
+    let numbers = text.match(/\d+/g)?.map(Number) || [];
 
-    // FIX: If OCR fails, estimate from numbers
-    if(total === 0){
-        total = love + like + laugh + wow + sad + pray;
+    console.log("ALL NUMBERS:", numbers);
+
+    /*
+    Expected format:
+    [649, 499, 103, 31, 8, 5, 3]
+    */
+
+    let love=0, like=0, laugh=0, wow=0, pray=0, sad=0;
+
+    if(numbers.length >= 7){
+
+        // First = total reactions
+        total = numbers[0];
+
+        // Next numbers follow WhatsApp layout
+        love = numbers[1];
+        like = numbers[2];
+        laugh = numbers[3];
+        wow = numbers[4];
+        pray = numbers[5];
+        sad = numbers[6];
     }
 
-    // CALCULATE %
+    // SAFETY FIX (if total missing)
+    if(total === 0){
+        total = love + like + laugh + wow + pray + sad;
+    }
+
+    // CALCULATE LOVE %
     let lovePercent = total ? (love / total) * 100 : 0;
 
-    // BOT DETECTION RULE
+    // BOT DETECTION RULE (YOUR RULE)
     let verdict = "";
     if(lovePercent >= 80){
-        verdict = "⚠️ BOT REACTION DETECTED (Love >= 80%)";
+        verdict = "⚠️ BOT REACTION DETECTED";
     }else{
         verdict = "✅ ORGANIC / MIXED REACTIONS";
     }
 
-    // SHOW RESULT
+    // DISPLAY RESULT
     document.getElementById("result").innerHTML = `
     <h3>📊 Analysis Result</h3>
+
     Total Reactions: <b>${total}</b><br><br>
 
     ❤️ Love: ${love}<br>
     👍 Like: ${like}<br>
     😂 Laugh: ${laugh}<br>
     😮 Wow: ${wow}<br>
-    😢 Sad: ${sad}<br>
-    🙏 Pray: ${pray}<br><br>
+    🙏 Pray: ${pray}<br>
+    😢 Sad: ${sad}<br><br>
 
     ❤️ Love %: ${lovePercent.toFixed(2)}%<br><br>
 
@@ -139,20 +156,21 @@ function analyze(text){
     `;
 
     drawChart(love, like, laugh, wow, sad, pray);
+
+    document.getElementById("status").innerText = "✅ Scan Complete";
 }
 
-// SMART EMOJI EXTRACTOR
-function extract(text, emoji){
-    let regex = new RegExp(emoji + "\\s*(\\d+)");
-    let match = text.match(regex);
-    return match ? parseInt(match[1]) : 0;
-}
 
-// GRAPH
+// GRAPH FUNCTION
 function drawChart(love, like, laugh, wow, sad, pray){
+
     const ctx = document.getElementById('chart');
 
-    new Chart(ctx, {
+    if(chartInstance){
+        chartInstance.destroy();
+    }
+
+    chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: ['❤️','👍','😂','😮','😢','🙏'],
