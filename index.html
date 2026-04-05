@@ -1,10 +1,3 @@
-
-</div>
-
-<script>
-
-let imageFile;
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,12 +15,15 @@ body{
     text-align:center;
     padding:20px;
 }
-h1{color:#00ffc3;}
+
+h1{
+    color:#00ffc3;
+}
 
 .box{
     border:1px solid #00ffc3;
     padding:15px;
-    margin:10px;
+    margin-top:20px;
     border-radius:10px;
 }
 
@@ -37,16 +33,12 @@ button{
     padding:15px;
     font-weight:bold;
     cursor:pointer;
+    margin-top:10px;
 }
 
 #loading{
     display:none;
-    font-size:18px;
     color:yellow;
-}
-
-#result{
-    margin-top:20px;
     font-size:18px;
 }
 
@@ -66,7 +58,7 @@ canvas{
 
 <button onclick="analyze()">⚡ SCAN IMAGE</button>
 
-<div id="loading">⚡ Scanning with Ultra AI...</div>
+<div id="loading">⚡ Scanning reactions with AI...</div>
 
 <div id="result"></div>
 
@@ -90,72 +82,92 @@ async function analyze(){
     const { data: { text } } = await Tesseract.recognize(
         img,
         'eng',
-        {
-            logger: m => console.log(m)
-        }
+        { logger: m => console.log(m) }
     );
 
     console.log("OCR TEXT:", text);
 
-    // Extract numbers
-    const numbers = text.match(/\d+/g);
+    // 🔍 Extract numbers
+    let numbers = text.match(/\d+/g)?.map(n => parseInt(n)) || [];
 
-    if(!numbers || numbers.length < 3){
-        document.getElementById("result").innerHTML =
-        "❌ Could not detect reactions properly";
+    if(numbers.length < 4){
         document.getElementById("loading").style.display = "none";
+        document.getElementById("result").innerHTML =
+        "❌ Could not detect reactions clearly. Try clearer image.";
         return;
     }
 
-    // Assign values based on WhatsApp layout
-    let love = parseInt(numbers[1]) || 0;
-    let like = parseInt(numbers[2]) || 0;
-    let laugh = parseInt(numbers[3]) || 0;
-    let wow = parseInt(numbers[4]) || 0;
-    let sad = parseInt(numbers[5]) || 0;
-    let pray = parseInt(numbers[6]) || 0;
+    // ✅ FIRST NUMBER = TOTAL
+    let total = numbers[0];
 
-    let total = love + like + laugh + wow + sad + pray;
+    // Reactions
+    let love = numbers[1] || 0;
+    let like = numbers[2] || 0;
+    let laugh = numbers[3] || 0;
+    let wow = numbers[4] || 0;
+    let pray = numbers[5] || 0;
+    let sad = numbers[6] || 0;
 
-    let lovePercent = (love / total) * 100;
+    // 🔢 Calculate total from emojis
+    let calculatedTotal = love + like + laugh + wow + pray + sad;
 
-    let resultText = "";
+    // 🎯 Accuracy
+    let accuracy = (calculatedTotal / total) * 100;
 
-    if(lovePercent >= 80){
-        resultText = "⚠️ BOT-LIKE PATTERN DETECTED (Love unusually high)";
-    } else {
-        resultText = "✅ Organic / Mixed reactions";
+    let warning = "";
+    if(calculatedTotal !== total){
+        warning = "⚠️ Mismatch detected (OCR may be imperfect)";
     }
+
+    // 🔥 YOUR BOT RULE
+    let others = like + laugh + wow + sad + pray;
+
+    let botDetected = false;
+
+    if(others > 0 && love >= (1.8 * others)){
+        botDetected = true;
+    }
+
+    let resultText = botDetected
+        ? "⚠️ BOT REACTION DETECTED (Love ≥ 80% more than others)"
+        : "✅ Organic / Mixed reactions";
+
+    let ratio = others > 0 ? (love / others).toFixed(2) : "∞";
 
     document.getElementById("loading").style.display = "none";
 
+    // 📊 RESULT DISPLAY
     document.getElementById("result").innerHTML = `
         <div class="box">
-        <b>Total:</b> ${total}<br><br>
+        <b>Total (From Image):</b> ${total}<br>
+        <b>Calculated Total:</b> ${calculatedTotal}<br>
+        <b>Accuracy:</b> ${accuracy.toFixed(2)}%<br>
+        ${warning}<br><br>
 
         ❤️ Love: ${love}<br>
         👍 Like: ${like}<br>
         😂 Laugh: ${laugh}<br>
         😮 Wow: ${wow}<br>
-        😢 Sad: ${sad}<br>
-        🙏 Pray: ${pray}<br><br>
+        🙏 Pray: ${pray}<br>
+        😢 Sad: ${sad}<br><br>
 
-        <b>Love %:</b> ${lovePercent.toFixed(2)}%<br><br>
+        <b>Others Total:</b> ${others}<br>
+        <b>Love vs Others Ratio:</b> ${ratio}x<br><br>
 
         <b>${resultText}</b>
         </div>
     `;
 
-    // Draw Chart
+    // 📊 GRAPH
     const ctx = document.getElementById('chart');
 
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['❤️','👍','😂','😮','😢','🙏'],
+            labels: ['❤️','👍','😂','😮','🙏','😢'],
             datasets: [{
                 label: 'Reactions',
-                data: [love, like, laugh, wow, sad, pray]
+                data: [love, like, laugh, wow, pray, sad]
             }]
         }
     });
