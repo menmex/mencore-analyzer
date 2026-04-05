@@ -3,63 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mencore AI Analyzer v6</title>
+<title>Mencore AI Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body {
-    background: black;
-    color: #00ff9c;
+    background: #0a0f1c;
+    color: #00ffcc;
     font-family: monospace;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
-
-.container {
-    border: 1px solid #00ff9c;
-    padding: 20px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 0 20px #00ff9c;
-}
-
-h2 {
     text-align: center;
 }
 
-input, button {
-    width: 100%;
-    padding: 10px;
-    margin-top: 10px;
-    background: black;
-    color: #00ff9c;
-    border: 1px solid #00ff9c;
-    border-radius: 5px;
+.container {
+    margin-top: 20px;
+}
+
+img {
+    max-width: 80%;
+    border: 1px solid #00ffcc;
 }
 
 button {
+    padding: 10px;
+    background: #00ffcc;
+    border: none;
     cursor: pointer;
-    font-weight: bold;
 }
 
-#terminal {
-    margin-top: 15px;
-    font-size: 13px;
-    min-height: 120px;
+.dashboard {
+    margin-top: 20px;
+    display: none;
 }
 
-#result {
-    margin-top: 15px;
-}
-
-.bar {
-    height: 8px;
-    background: #00ff9c;
-    width: 0%;
-    margin-top: 10px;
-    transition: width 0.4s;
+.box {
+    border: 1px solid #00ffcc;
+    padding: 15px;
+    margin: 10px;
 }
 </style>
 </head>
@@ -67,102 +48,115 @@ button {
 <body>
 
 <div class="container">
-    <h2>🟢 Mencore AI Analyzer</h2>
+<h2>🟢 Mencore AI Dashboard</h2>
 
-    <input type="text" id="link" placeholder="Enter WhatsApp link">
-    <input type="file" id="image">
+<input type="file" id="imageInput"><br><br>
+<img id="preview"><br><br>
 
-    <button onclick="analyze()">INITIATE SCAN</button>
+<button onclick="runOCR()">SCAN IMAGE</button>
 
-    <div id="terminal"></div>
-    <div class="bar" id="bar"></div>
-    <div id="result"></div>
+<div id="loading">⚡ AI scanning...</div>
+
+<div class="dashboard" id="dashboard">
+
+<div class="box" id="verdictBox"></div>
+
+<canvas id="chart" width="300" height="300"></canvas>
+
+</div>
+
 </div>
 
 <script>
 
-function typeLine(text, delay){
-    return new Promise(resolve=>{
-        setTimeout(()=>{
-            let terminal = document.getElementById("terminal");
-            terminal.innerHTML += text + "<br>";
-            terminal.scrollTop = terminal.scrollHeight;
-            resolve();
-        }, delay);
-    });
+let imageFile;
+
+document.getElementById("imageInput").addEventListener("change", function(e){
+    imageFile = e.target.files[0];
+    let reader = new FileReader();
+    reader.onload = () => document.getElementById("preview").src = reader.result;
+    reader.readAsDataURL(imageFile);
+});
+
+function clean(text){
+    return text.replace(/\n/g," ").replace(/[^0-9❤️👍😂😮😢🔥 ]/g,"");
 }
 
-async function analyze(){
-    let link = document.getElementById("link").value;
-    let file = document.getElementById("image").files[0];
-    let bar = document.getElementById("bar");
-    let result = document.getElementById("result");
-    let terminal = document.getElementById("terminal");
+function find(text, emoji){
+    let i = text.indexOf(emoji);
+    if(i === -1) return 0;
+    let part = text.substring(i, i+15);
+    let num = part.match(/\d+/);
+    return num ? parseInt(num[0]) : 0;
+}
 
-    if(!link || !file){
-        alert("Enter link and upload image");
+function runOCR(){
+    if(!imageFile){
+        alert("Upload image first");
         return;
     }
 
-    terminal.innerHTML = "";
-    result.innerHTML = "";
-    bar.style.width = "0%";
+    document.getElementById("loading").innerText = "⚡ Scanning...";
+    document.getElementById("dashboard").style.display = "none";
 
-    await typeLine("> Initializing AI core...", 500);
-    bar.style.width = "20%";
+    Tesseract.recognize(imageFile,'eng').then(({ data: { text } }) => {
 
-    await typeLine("> Scanning image data...", 800);
-    bar.style.width = "40%";
+        let t = clean(text);
 
-    await typeLine("> Extracting reactions...", 800);
-    bar.style.width = "60%";
+        let love = find(t,"❤️");
+        let like = find(t,"👍");
+        let laugh = find(t,"😂");
+        let wow = find(t,"😮");
+        let sad = find(t,"😢");
 
-    await typeLine("> Running love-dominance analysis...", 800);
-    bar.style.width = "80%";
+        let arr = [love, like, laugh, wow, sad];
 
-    await typeLine("> Finalizing AI verdict...", 800);
-    bar.style.width = "100%";
+        if(arr.every(v => v === 0)){
+            let nums = t.match(/\d+/g) || [];
+            nums = nums.map(Number);
+            love = nums[0] || 0;
+            like = nums[1] || 0;
+            laugh = nums[2] || 0;
+            wow = nums[3] || 0;
+            sad = nums[4] || 0;
+        }
 
-    // 🔥 SIMULATED REACTION DATA (replace with real OCR later)
-    let love = Math.floor(Math.random()*600);
-    let like = Math.floor(Math.random()*200);
-    let fire = Math.floor(Math.random()*100);
-    let laugh = Math.floor(Math.random()*50);
-    let wow = Math.floor(Math.random()*20);
+        let total = love + like + laugh + wow + sad;
+        let lovePercent = total ? (love/total)*100 : 0;
 
-    let total = love + like + fire + laugh + wow;
+        let verdict = "";
 
-    // ❤️ MAIN LOGIC
-    let lovePercent = (love / total) * 100;
+        if(lovePercent >= 80){
+            verdict = "⚠️ BOT-LIKE MIX DETECTED";
+        } else if(lovePercent >= 50){
+            verdict = "🤔 SUSPICIOUS ENGAGEMENT";
+        } else {
+            verdict = "✅ ORGANIC REACTIONS";
+        }
 
-    let verdict = "";
-    let confidence = Math.floor(Math.random()*20) + 80;
+        document.getElementById("loading").innerText = "✅ Done";
 
-    if (lovePercent >= 80) {
-        verdict = "⚠️ Mixed Reaction Detected (Organic + Bot Activity High)";
-    } 
-    else if (lovePercent >= 50) {
-        verdict = "🤔 Suspicious Engagement Pattern";
-    } 
-    else {
-        verdict = "✅ Mostly Organic Reactions";
-    }
-
-    result.innerHTML = `
+        document.getElementById("verdictBox").innerHTML = `
         <h3>${verdict}</h3>
+        Total: ${total}<br>
+        Love %: ${lovePercent.toFixed(1)}%
+        `;
 
-        AI Confidence: ${confidence}%<br><br>
+        document.getElementById("dashboard").style.display = "block";
 
-        📊 Total Reactions: ${total}<br><br>
+        // Chart
+        new Chart(document.getElementById("chart"), {
+            type: 'bar',
+            data: {
+                labels: ["❤️","👍","😂","😮","😢"],
+                datasets: [{
+                    label: "Reactions",
+                    data: [love, like, laugh, wow, sad]
+                }]
+            }
+        });
 
-        ❤️ Love: ${love}<br>
-        👍 Like: ${like}<br>
-        🔥 Fire: ${fire}<br>
-        😂 Laugh: ${laugh}<br>
-        😮 Wow: ${wow}<br><br>
-
-        💡 Love Percentage: ${lovePercent.toFixed(1)}%
-    `;
+    });
 }
 
 </script>
