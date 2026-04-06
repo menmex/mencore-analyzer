@@ -1,116 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Mini Mencore</title>
-
-<style>
-body {
-    margin: 0;
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(135deg, #0a1f44, #1e90ff);
-    color: white;
-    text-align: center;
-}
-
-/* Container */
-.container {
-    margin-top: 60px;
-    padding: 20px;
-}
-
-/* Title */
-h1 {
-    font-size: 40px;
-    margin-bottom: 5px;
-}
-
-/* Subtitle */
-h2 {
-    font-size: 18px;
-    font-weight: normal;
-    margin-top: 0;
-    opacity: 0.9;
-}
-
-/* Powered */
-.powered {
-    font-size: 12px;
-    opacity: 0.6;
-    margin-bottom: 30px;
-}
-
-/* Inputs */
-input {
-    width: 260px;
-    padding: 12px;
-    margin: 8px;
-    border-radius: 10px;
-    border: none;
-    outline: none;
-}
-
-/* Button */
-button {
-    background: #00bfff;
-    color: white;
-    padding: 12px 25px;
-    border: none;
-    border-radius: 10px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 10px;
-    transition: 0.3s;
-}
-
-button:hover {
-    background: #009acd;
-}
-
-/* Result box */
-.result {
-    margin-top: 30px;
-    padding: 20px;
-    border-radius: 15px;
-    background: rgba(255,255,255,0.1);
-    backdrop-filter: blur(10px);
-    display: inline-block;
-    min-width: 300px;
-}
-</style>
-</head>
-
-<body>
-
-<div class="container">
-
-<h1>Mini Mencore</h1>
-<h2>Bot Reaction Detector</h2>
-<div class="powered">Powered by Menmex</div>
-
-<input type="text" id="link" placeholder="WhatsApp Channel Link"><br>
-
-<input type="number" id="love" placeholder="❤️ Love"><br>
-<input type="number" id="like" placeholder="👍 Like"><br>
-<input type="number" id="laugh" placeholder="😂 Laugh"><br>
-<input type="number" id="total" placeholder="📊 Total"><br>
-
-<button onclick="startAnalysis()">Initiate</button>
-
-<div class="result" id="output"></div>
-
-</div>
-
 <script>
 
-// Start with delay
+// Start analysis with spinner
 function startAnalysis() {
 
-    document.getElementById("output").innerHTML = "⏳ Initiating analysis...";
+    document.getElementById("output").innerHTML = `
+        <div class="spinner"></div>
+        <p>Analyzing reaction pattern...</p>
+    `;
 
     setTimeout(() => {
         analyze();
-    }, 6000); // 6 seconds
+    }, 6000);
 }
 
 // Main logic
@@ -133,14 +33,18 @@ function analyze() {
     let result = "";
     let confidence = "";
 
-    if (lovePercent >= 60) {
+    // ✅ UPDATED RULE (59%)
+    if (lovePercent >= 59) {
 
         result = "🚨 BOT REACTION DETECTED";
 
-        let conf = lovePercent + 13;
-        if (conf > 100) conf = 100;
+        // 🔥 NEW CONFIDENCE (2% - 5% boost)
+        let minConf = lovePercent + (lovePercent * 0.02);
+        let maxConf = lovePercent + (lovePercent * 0.05);
 
-        confidence = conf.toFixed(2) + "%";
+        if (maxConf > 100) maxConf = 100;
+
+        confidence = `${minConf.toFixed(2)}% - ${maxConf.toFixed(2)}%`;
 
     } else {
 
@@ -162,7 +66,14 @@ function analyze() {
     `;
 }
 
-</script>
+// Clear function
+function clearFields() {
+    document.getElementById("link").value = "";
+    document.getElementById("love").value = "";
+    document.getElementById("like").value = "";
+    document.getElementById("laugh").value = "";
+    document.getElementById("total").value = "";
+    document.getElementById("output").innerHTML = "";
+}
 
-</body>
-</html>
+</script>
