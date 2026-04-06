@@ -1,49 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>WhatsApp Bot Reaction Detector</title>
-    <style>
-        body {
-            background: #0f172a;
-            color: white;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
-        input, button {
-            padding: 10px;
-            margin: 10px;
-            border-radius: 8px;
-            border: none;
-        }
-        button {
-            background: orange;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .card {
-            background: #1e293b;
-            padding: 20px;
-            margin-top: 20px;
-            border-radius: 12px;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Mini Mencore Bot Detector</title>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
+<style>
+body {
+    background: #0f172a;
+    color: white;
+    font-family: Arial;
+    text-align: center;
+}
+input, button {
+    padding: 10px;
+    margin: 6px;
+    border-radius: 8px;
+    border: none;
+}
+button {
+    background: orange;
+    font-weight: bold;
+}
+.card {
+    background: #1e293b;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 12px;
+}
+img {
+    max-width: 220px;
+    margin-top: 10px;
+}
+</style>
 </head>
+
 <body>
 
-    <h1>🔥 WhatsApp Bot Reaction Detector</h1>
+<h1>🔥 Mini Mencore Bot Detector</h1>
 
-    <!-- WhatsApp Link Input -->
-    <input id="link" placeholder="Paste WhatsApp Channel Link"><br><br>
+<input id="link" placeholder="WhatsApp Channel Link"><br>
 
-    <!-- Reaction Inputs -->
-    <input id="love" placeholder="Love Reactions"><br>
-    <input id="like" placeholder="Like Reactions"><br>
-    <input id="laugh" placeholder="Laugh Reactions"><br>
-    <input id="total" placeholder="Total Reactions"><br><br>
+<input type="file" id="imageInput" accept="image/*"><br>
+<img id="preview" style="display:none;"><br>
 
-    <button onclick="analyze()">Analyze</button>
+<h3>Manual Input (Backup)</h3>
+<input id="love" placeholder="❤️ Love"><br>
+<input id="like" placeholder="👍 Like"><br>
+<input id="laugh" placeholder="😂 Laugh"><br>
+<input id="total" placeholder="Total Reactions"><br>
 
-    <div class="card" id="resultBox" style="display:none;">
-        <h
+<button onclick="analyze()">Analyze</button>
+
+<div class="card" id="resultBox" style="display:none;">
+    <h2 id="result"></h2>
+    <pre id="details"></pre>
+</div>
+
+<script>
+
+// Preview Image
+document.getElementById("imageInput").onchange = function(e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById("preview");
+
+    if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = "block";
+    }
+};
+
+// MAIN ANALYZE FUNCTION
+async function analyze() {
+
+    const file = document.getElementById("imageInput").files[0];
+
+    let love = 0, like = 0, laugh = 0;
+
+    // 🔥 STEP 1: Try IMAGE first
+    if (file) {
+        document.getElementById("result").innerText = "⏳ Reading image...";
+
+        const { data: { text } } = await Tesseract.recognize(file, 'eng');
+
+        let numbers = text.match(/\d+/g)?.map(Number) || [];
+
+        console.log("OCR Numbers:", numbers);
+
+        if (numbers.length >= 3) {
+            // Sort descending
+            numbers.sort((a,b)=>b-a);
+
+            love = numbers[0];
+            like = numbers[1];
+            laugh = numbers[2];
+        }
+    }
+
+    // 🔁 STEP 2: Fallback to manual input if OCR fails
+    if (love === 0) {
+        love = Number(document.getElementById("love").value);
+        like = Number(document.getElementById("like").value);
+        laugh = Number(document.getElementById("laugh").value);
+    }
+
+    const total = Number(document.getElementById("total").value);
+    const link = document.getElementById("link").value;
+
+    // ❌ Validation
+    if (!total || total <= 0) {
+        alert("Enter valid total reactions");
+        return;
+    }
+
+    const sum = love + like + laugh;
+    if (sum > total) {
+        alert("Reactions exceed total");
+        return;
+    }
+
+    // ✅ Calculate
+    const lovePercentage = (love / total) * 100;
+
+    // ✅ Detection
+    let result = "";
+    if (lovePercentage >= 80) {
+        result = "🚨 Bot Reaction Detected (Mixed Reactions)";
+    } else {
+        result = "✅ Natural Reactions";
+    }
+
+    // ✅ Show result
+    document.getElementById("resultBox").style.display = "block";
+    document.getElementById("result").innerText = result;
+
+    document.getElementById("details").innerText =
+`Link: ${link}
+
+❤️ Love: ${love}
+👍 Like: ${like}
+😂 Laugh: ${laugh}
+
+Total: ${total}
+
+Love %: ${lovePercentage.toFixed(2)}%`;
+}
+
+</script>
+
+</body>
+</html>
