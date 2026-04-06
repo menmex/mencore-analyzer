@@ -1,191 +1,157 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Mencore AI Pro</title>
-
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+<title>Mini Mencore Bot Detector</title>
 <style>
-body{
-    background:#050d1a;
-    color:#00ffc3;
-    font-family:monospace;
-    text-align:center;
-}
-
-h1{color:#00ffc3;}
-
-input, button{
-    padding:10px;
-    margin:10px;
-}
-
-button{
-    background:#00ffc3;
-    border:none;
-    font-weight:bold;
-    cursor:pointer;
-}
-
-.box{
-    border:2px solid #00ffc3;
-    padding:15px;
-    margin-top:20px;
-    border-radius:10px;
-}
-
-#status{color:yellow;}
+    body {
+        font-family: Arial;
+        background: #0f172a;
+        color: white;
+        text-align: center;
+        padding: 20px;
+    }
+    input, button {
+        padding: 10px;
+        margin: 5px;
+        border-radius: 8px;
+        border: none;
+    }
+    input {
+        width: 250px;
+    }
+    button {
+        background: orange;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .card {
+        background: #1e293b;
+        padding: 20px;
+        border-radius: 15px;
+        margin-top: 20px;
+    }
+    img {
+        max-width: 200px;
+        margin-top: 10px;
+        border-radius: 10px;
+    }
 </style>
 </head>
-
 <body>
 
-<h1>🟢 Mencore AI PRO Dashboard</h1>
+<h1>🔥 Mini Mencore Bot Detector</h1>
 
-<!-- NEW: WHATSAPP LINK INPUT -->
-<input type="text" id="linkInput" placeholder="Paste WhatsApp post link here">
+<!-- WhatsApp Link -->
+<input id="link" placeholder="Paste WhatsApp Channel Link"><br>
 
-<br>
+<!-- Image Upload -->
+<input type="file" id="imageInput" accept="image/*"><br>
+<img id="preview" style="display:none;"/>
 
-<input type="file" id="imageInput">
+<h3>Enter Reactions</h3>
+<input id="views" placeholder="Views"><br>
 
-<br>
+<input id="love" placeholder="❤️"><br>
+<input id="laugh" placeholder="😂"><br>
+<input id="wow" placeholder="😮"><br>
+<input id="sad" placeholder="😢"><br>
+<input id="like" placeholder="👍"><br>
 
-<button onclick="scanImage()">⚡ SCAN IMAGE</button>
+<button onclick="analyze()">Analyze</button>
 
-<div id="status">Waiting...</div>
-
-<div class="box" id="result"></div>
-
-<canvas id="chart"></canvas>
+<div class="card" id="resultBox" style="display:none;">
+    <h2 id="result"></h2>
+    <p id="details"></p>
+</div>
 
 <script>
+// Image preview
+document.getElementById("imageInput").onchange = function(e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById("preview");
 
-let chartInstance;
+    if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = "block";
+    }
+};
 
-async function scanImage(){
+// Detection Algorithm
+function detectBotReaction(data) {
+    const { reactions, views } = data;
 
-    const file = document.getElementById("imageInput").files[0];
-    const link = document.getElementById("linkInput").value;
+    const total = Object.values(reactions).reduce((a,b)=>a+b,0);
+    if (total === 0 || views === 0) return { result: "No data", score: 0 };
 
-    if(!file){
-        alert("Upload screenshot!");
-        return;
+    const max = Math.max(...Object.values(reactions));
+    const dominant = (max / total) * 100;
+
+    const unique = Object.values(reactions).filter(v=>v>0).length;
+    const diversity = unique / Object.keys(reactions).length;
+
+    const ratio = total / views;
+
+    let score = 0;
+    let rules = [];
+
+    if (dominant >= 85) { score += 35; rules.push("Extreme dominance"); }
+    else if (dominant >= 75) { score += 25; rules.push("High dominance"); }
+
+    if (diversity <= 0.3) { score += 20; rules.push("Low diversity"); }
+
+    if (ratio >= 0.7) { score += 30; rules.push("High ratio"); }
+    else if (ratio >= 0.5) { score += 20; rules.push("Medium ratio"); }
+
+    if (dominant > 80 && ratio > 0.6) {
+        score += 15;
+        rules.push("Combo trigger");
     }
 
-    document.getElementById("status").innerText = "⚡ Ultra AI scanning...";
+    let result = "";
+    if (score >= 75) result = "🚨 Likely Bot Reactions";
+    else if (score >= 45) result = "⚠️ Suspicious Activity";
+    else result = "✅ Looks Natural";
 
-    const { data:{ text } } = await Tesseract.recognize(file, 'eng');
-
-    console.log("RAW OCR:", text);
-
-    analyze(text, link);
+    return {
+        total,
+        dominant: dominant.toFixed(2),
+        diversity: diversity.toFixed(2),
+        ratio: ratio.toFixed(2),
+        score,
+        rules,
+        result
+    };
 }
 
-function analyze(text, link){
+// Analyze function
+function analyze() {
+    const data = {
+        reactions: {
+            "❤️": Number(document.getElementById("love").value),
+            "😂": Number(document.getElementById("laugh").value),
+            "😮": Number(document.getElementById("wow").value),
+            "😢": Number(document.getElementById("sad").value),
+            "👍": Number(document.getElementById("like").value)
+        },
+        views: Number(document.getElementById("views").value)
+    };
 
-    text = text.replace(/\n/g, " ");
+    const res = detectBotReaction(data);
 
-    // GET ALL NUMBERS
-    let numbers = text.match(/\d+/g)?.map(Number) || [];
+    document.getElementById("resultBox").style.display = "block";
+    document.getElementById("result").innerText = res.result;
 
-    console.log("Numbers:", numbers);
+    document.getElementById("details").innerText =
+        `Score: ${res.score}
+Total Reactions: ${res.total}
+Dominant %: ${res.dominant}%
+Diversity: ${res.diversity}
+Ratio: ${res.ratio}
 
-    /*
-    EXPECTED FORMAT:
-    [TOTAL, LOVE, LIKE, LAUGH, WOW, PRAY, SAD]
-    */
-
-    let total=0, love=0, like=0, laugh=0, wow=0, pray=0, sad=0;
-
-    // SMART DETECTION
-    if(numbers.length >= 7){
-
-        // Find biggest number = TOTAL
-        total = Math.max(...numbers);
-
-        // Remove total from list
-        numbers.splice(numbers.indexOf(total),1);
-
-        // Sort remaining descending
-        numbers.sort((a,b)=>b-a);
-
-        // Assign values
-        love = numbers[0] || 0;
-        like = numbers[1] || 0;
-        laugh = numbers[2] || 0;
-        wow = numbers[3] || 0;
-        pray = numbers[4] || 0;
-        sad = numbers[5] || 0;
-    }
-
-    // FALLBACK
-    if(total === 0){
-        total = love + like + laugh + wow + pray + sad;
-    }
-
-    // VALIDATION FIX
-    let sum = love+like+laugh+wow+pray+sad;
-
-    if(sum > total){
-        total = sum;
-    }
-
-    // LOVE %
-    let lovePercent = total ? (love / total) * 100 : 0;
-
-    // BOT RULE
-    let verdict = lovePercent >= 80
-        ? "⚠️ BOT REACTION DETECTED"
-        : "✅ ORGANIC / MIXED";
-
-    // OUTPUT
-    document.getElementById("result").innerHTML = `
-    <h3>📊 AI Analysis</h3>
-
-    🔗 Link: ${link || "Not provided"}<br><br>
-
-    Total: <b>${total}</b><br><br>
-
-    ❤️ ${love} |
-    👍 ${like} |
-    😂 ${laugh} |
-    😮 ${wow} |
-    🙏 ${pray} |
-    😢 ${sad}<br><br>
-
-    ❤️ Love %: ${lovePercent.toFixed(2)}%<br><br>
-
-    <b>${verdict}</b>
-    `;
-
-    drawChart(love, like, laugh, wow, sad, pray);
-
-    document.getElementById("status").innerText = "✅ Scan Complete";
+Triggered Rules:
+- ${res.rules.join("\n- ")}`;
 }
-
-function drawChart(love, like, laugh, wow, sad, pray){
-
-    const ctx = document.getElementById('chart');
-
-    if(chartInstance){
-        chartInstance.destroy();
-    }
-
-    chartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['❤️','👍','😂','😮','😢','🙏'],
-            datasets: [{
-                label: 'Reactions',
-                data: [love, like, laugh, wow, sad, pray]
-            }]
-        }
-    });
-}
-
 </script>
 
 </body>
