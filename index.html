@@ -12,6 +12,7 @@ body {
     color: white;
     font-family: Arial;
     text-align: center;
+    padding: 20px;
 }
 input, button {
     padding: 10px;
@@ -22,6 +23,7 @@ input, button {
 button {
     background: orange;
     font-weight: bold;
+    cursor: pointer;
 }
 .card {
     background: #1e293b;
@@ -45,11 +47,7 @@ img {
 <input type="file" id="imageInput" accept="image/*"><br>
 <img id="preview" style="display:none;"><br>
 
-<h3>Manual Input (Backup)</h3>
-<input id="love" placeholder="❤️ Love"><br>
-<input id="like" placeholder="👍 Like"><br>
-<input id="laugh" placeholder="😂 Laugh"><br>
-<input id="total" placeholder="Total Reactions"><br>
+<input id="total" placeholder="Total Reactions (optional)"><br>
 
 <button onclick="analyze()">Analyze</button>
 
@@ -71,59 +69,57 @@ document.getElementById("imageInput").onchange = function(e) {
     }
 };
 
-// MAIN ANALYZE FUNCTION
+// MAIN FUNCTION
 async function analyze() {
 
     const file = document.getElementById("imageInput").files[0];
-
-    let love = 0, like = 0, laugh = 0;
-
-    // 🔥 STEP 1: Try IMAGE first
-    if (file) {
-        document.getElementById("result").innerText = "⏳ Reading image...";
-
-        const { data: { text } } = await Tesseract.recognize(file, 'eng');
-
-        let numbers = text.match(/\d+/g)?.map(Number) || [];
-
-        console.log("OCR Numbers:", numbers);
-
-        if (numbers.length >= 3) {
-            // Sort descending
-            numbers.sort((a,b)=>b-a);
-
-            love = numbers[0];
-            like = numbers[1];
-            laugh = numbers[2];
-        }
-    }
-
-    // 🔁 STEP 2: Fallback to manual input if OCR fails
-    if (love === 0) {
-        love = Number(document.getElementById("love").value);
-        like = Number(document.getElementById("like").value);
-        laugh = Number(document.getElementById("laugh").value);
-    }
-
-    const total = Number(document.getElementById("total").value);
     const link = document.getElementById("link").value;
 
-    // ❌ Validation
-    if (!total || total <= 0) {
-        alert("Enter valid total reactions");
+    if (!file) {
+        alert("Upload image first");
         return;
     }
 
+    document.getElementById("result").innerText = "⏳ Scanning image...";
+
+    const { data: { text } } = await Tesseract.recognize(file, 'eng');
+
+    console.log("OCR TEXT:", text);
+
+    let numbers = text.match(/\d+/g)?.map(Number) || [];
+
+    if (numbers.length < 4) {
+        document.getElementById("result").innerText = "❌ Not enough numbers detected";
+        return;
+    }
+
+    // 🔥 Sort numbers (biggest first)
+    numbers.sort((a, b) => b - a);
+
+    // 🔥 Remove biggest (assumed TOTAL)
+    const detectedTotal = numbers.shift();
+
+    // 🔥 Next biggest are reactions
+    const love = numbers[0] || 0;
+    const like = numbers[1] || 0;
+    const laugh = numbers[2] || 0;
+
+    // 🔥 Use user input total OR detected total
+    let inputTotal = Number(document.getElementById("total").value);
+    const total = inputTotal > 0 ? inputTotal : detectedTotal;
+
+    // 🔥 Safe calculation
     const sum = love + like + laugh;
-    if (sum > total) {
-        alert("Reactions exceed total");
+
+    // Allow OCR error margin
+    if (sum > total * 1.2) {
+        document.getElementById("result").innerText = "⚠️ OCR Error: Detected values inconsistent";
         return;
     }
 
-    // ✅ Calculate
     const lovePercentage = (love / total) * 100;
 
-    // ✅ Detection
+    // 🔥 FINAL RULE (YOUR RULE)
     let result = "";
     if (lovePercentage >= 80) {
         result = "🚨 Bot Reaction Detected (Mixed Reactions)";
@@ -131,12 +127,16 @@ async function analyze() {
         result = "✅ Natural Reactions";
     }
 
-    // ✅ Show result
+    // SHOW RESULT
     document.getElementById("resultBox").style.display = "block";
     document.getElementById("result").innerText = result;
 
     document.getElementById("details").innerText =
-`Link: ${link}
+`WhatsApp Link:
+${link}
+
+Detected Numbers:
+${numbers.join(", ")}
 
 ❤️ Love: ${love}
 👍 Like: ${like}
@@ -144,7 +144,7 @@ async function analyze() {
 
 Total: ${total}
 
-Love %: ${lovePercentage.toFixed(2)}%`;
+Love Percentage: ${lovePercentage.toFixed(2)}%`;
 }
 
 </script>
