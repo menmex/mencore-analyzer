@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>WhatsApp Bot Reaction Detector</title>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <style>
         body {
             background: #0f172a;
@@ -29,10 +28,6 @@
             margin-top: 20px;
             border-radius: 12px;
         }
-        img {
-            max-width: 250px;
-            margin-top: 10px;
-        }
     </style>
 </head>
 <body>
@@ -42,82 +37,13 @@
     <!-- WhatsApp Link Input -->
     <input id="link" placeholder="Paste WhatsApp Channel Link"><br><br>
 
-    <!-- Image Upload -->
-    <input type="file" id="imageInput" accept="image/*"><br>
-    <img id="preview" style="display:none;"/>
+    <!-- Reaction Inputs -->
+    <input id="love" placeholder="Love Reactions"><br>
+    <input id="like" placeholder="Like Reactions"><br>
+    <input id="laugh" placeholder="Laugh Reactions"><br>
+    <input id="total" placeholder="Total Reactions"><br><br>
 
-    <button onclick="processImage()">Analyze Image</button>
+    <button onclick="analyze()">Analyze</button>
 
     <div class="card" id="resultBox" style="display:none;">
-        <h2 id="result"></h2>
-        <pre id="details"></pre>
-    </div>
-
-    <script>
-        // Preview Image
-        document.getElementById("imageInput").onchange = function(e) {
-            const file = e.target.files[0];
-            const preview = document.getElementById("preview");
-
-            if (file) {
-                preview.src = URL.createObjectURL(file);
-                preview.style.display = "block";
-            }
-        };
-
-        // Image Processing and Detection
-        async function processImage() {
-            const file = document.getElementById("imageInput").files[0];
-            const link = document.getElementById("link").value;
-
-            if (!file) {
-                alert("Please upload an image first.");
-                return;
-            }
-
-            document.getElementById("result").innerText = "⏳ Scanning image...";
-
-            // Use Tesseract.js to recognize text in the image
-            const { data: { text } } = await Tesseract.recognize(file, 'eng');
-
-            console.log("OCR Result:", text);
-
-            // Extract numbers from image (assume reactions are first 5 numbers in order)
-            const numbers = text.match(/\d+/g)?.map(Number) || [];
-
-            if (numbers.length < 5) {
-                document.getElementById("result").innerText = "❌ Could not detect at least 5 reactions from the image.";
-                return;
-            }
-
-            // Map extracted numbers to reaction types
-            const reactions = {
-                "❤️": numbers[0] || 0,
-                "😂": numbers[1] || 0,
-                "😮": numbers[2] || 0,
-                "😢": numbers[3] || 0,
-                "👍": numbers[4] || 0
-            };
-
-            // Detect bot reaction based on love reaction percentage
-            const totalReactions = Object.values(reactions).reduce((a, b) => a + b, 0);
-            const lovePercentage = (reactions["❤️"] / totalReactions) * 100;
-
-            const result = lovePercentage >= 80 ? "🚨 Likely Bot Reactions" : "✅ Looks Natural";
-
-            // Display results
-            document.getElementById("resultBox").style.display = "block";
-            document.getElementById("result").innerText = result;
-            document.getElementById("details").innerText =
-                `WhatsApp Link: ${link}
-Total Reactions Detected: ${totalReactions}
-❤️ Reactions: ${reactions["❤️"]}
-Love Percentage: ${lovePercentage.toFixed(2)}%
-
-${lovePercentage >= 80 ? "Bot behavior detected!" : "Normal user reactions."}`;
-        }
-
-    </script>
-
-</body>
-</html>
+        <h
