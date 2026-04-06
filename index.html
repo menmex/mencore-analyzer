@@ -2,134 +2,119 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>🔥 Mini Mencore Bot Detector v2</title>
+<title>🔥 Mini Mencore Bot Detector</title>
+
 <style>
 body {
     font-family: Arial;
-    background: #0b1a2f;
+    background: #0b1a2a;
     color: white;
     text-align: center;
     padding: 20px;
 }
+
+h1 {
+    margin-bottom: 20px;
+}
+
 input, button {
     padding: 10px;
     margin: 10px;
     border-radius: 8px;
     border: none;
 }
+
 button {
     background: orange;
-    font-weight: bold;
     cursor: pointer;
+    font-weight: bold;
 }
-.result {
-    margin-top: 20px;
+
+#resultBox {
+    margin-top: 30px;
     padding: 20px;
-    background: #162447;
-    border-radius: 12px;
+    background: #132b45;
+    border-radius: 10px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🔥 Mini Mencore Bot Detector v2</h1>
+<h1>🔥 Mini Mencore Bot Detector</h1>
 
-<input type="text" id="link" placeholder="WhatsApp Channel Link"><br>
+<input type="text" id="link" placeholder="Paste WhatsApp Channel Link" size="40"><br>
 
-<input type="number" id="love" placeholder="❤️ Love"><br>
-<input type="number" id="like" placeholder="👍 Like"><br>
-<input type="number" id="laugh" placeholder="😂 Laugh"><br>
-<input type="number" id="total" placeholder="Total Reactions"><br>
+<input type="text" id="numbers" placeholder="Paste reaction numbers (comma separated)">
+<br>
 
 <button onclick="analyze()">Analyze</button>
 
-<div class="result" id="output"></div>
+<div id="resultBox"></div>
 
 <script>
 function analyze() {
-    const link = document.getElementById("link").value;
-    const love = Number(document.getElementById("love").value);
-    const like = Number(document.getElementById("like").value);
-    const laugh = Number(document.getElementById("laugh").value);
-    const total = Number(document.getElementById("total").value);
 
-    if (!total || (love + like + laugh) > total) {
-        alert("Invalid input: reactions exceed total");
+    const link = document.getElementById("link").value;
+    const input = document.getElementById("numbers").value;
+
+    if (!input) {
+        alert("Enter reaction numbers!");
         return;
     }
 
+    // Convert input to array
+    let reactions = input.split(",").map(num => parseInt(num.trim()));
+
+    // Total reactions
+    const total = reactions.reduce((a, b) => a + b, 0);
+
+    // Exact extraction
+    const love = reactions[0] || 0;
+    const like = reactions[1] || 0;
+    const laugh = reactions[2] || 0;
+
+    // Others
     const others = total - (love + like + laugh);
 
+    // Percentage
     const lovePercent = (love / total) * 100;
-    const likeRatio = love > 0 ? (like / love) : 0;
-    const laughPercent = (laugh / total) * 100;
 
-    // diversity (used reactions)
-    let used = 0;
-    if (love > 0) used++;
-    if (like > 0) used++;
-    if (laugh > 0) used++;
-    if (others > 0) used++;
-
-    const diversity = used / 4;
-
-    const dominanceGap = love - (like + laugh);
-
-    let score = 0;
-
-    // 🔥 RULES
-
-    // Love %
-    if (lovePercent >= 85) score += 40;
-    else if (lovePercent >= 80) score += 30;
-    else if (lovePercent >= 75) score += 20;
-
-    // Like ratio
-    if (likeRatio < 0.05) score += 20;
-    else if (likeRatio < 0.1) score += 10;
-
-    // Laugh %
-    if (laughPercent < 1) score += 20;
-    else if (laughPercent < 3) score += 15;
-
-    // Diversity
-    if (diversity < 0.2) score += 20;
-    else if (diversity < 0.4) score += 10;
-
-    // Dominance gap
-    if (dominanceGap > (0.6 * total)) score += 20;
-
-    // 🎯 FINAL RESULT
     let result = "";
-    if (score >= 70) result = "🚨 Strong Bot";
-    else if (score >= 50) result = "🚨 Bot";
-    else if (score >= 30) result = "⚠️ Suspicious";
-    else result = "✅ Natural";
+    let confidence = "";
 
-    // 🎯 CONFIDENCE RATE
-    let confidence = Math.min(100, Math.round((score / 100) * 100));
+    // ✅ YOUR FINAL RULE (60%)
+    if (lovePercent >= 60) {
+        result = "🚨 BOT REACTION DETECTED";
 
-    document.getElementById("output").innerHTML = `
+        if (lovePercent >= 80) {
+            confidence = "High (90–95%)";
+        } else if (lovePercent >= 70) {
+            confidence = "Medium (75–85%)";
+        } else {
+            confidence = "Low (60–70%)";
+        }
+
+    } else {
+        result = "✅ ORGANIC REACTIONS";
+        confidence = "High (85–90%)";
+    }
+
+    // Output
+    document.getElementById("resultBox").innerHTML = `
         <h2>${result}</h2>
-        <p><b>WhatsApp Link:</b> ${link}</p>
+        <p><b>WhatsApp Link:</b><br>${link}</p>
 
-        <p>❤️ Love: ${love}</p>
-        <p>👍 Like: ${like}</p>
-        <p>😂 Laugh: ${laugh}</p>
-        <p>➕ Others: ${others}</p>
+        <p>
+        ❤️ Love: ${love} <br>
+        👍 Like: ${like} <br>
+        😂 Laugh: ${laugh} <br>
+        📦 Others: ${others}
+        </p>
 
-        <hr>
-
-        <p>📊 Love %: ${lovePercent.toFixed(2)}%</p>
-        <p>📊 Like/Love Ratio: ${likeRatio.toFixed(2)}</p>
-        <p>📊 Laugh %: ${laughPercent.toFixed(2)}%</p>
-        <p>📊 Diversity: ${diversity.toFixed(2)}</p>
-
-        <hr>
-
-        <h3>🔥 Score: ${score}</h3>
-        <h2>🎯 Confidence: ${confidence}%</h2>
+        <p><b>Total:</b> ${total}</p>
+        <p><b>Love Percentage:</b> ${lovePercent.toFixed(2)}%</p>
+        <p><b>Confidence:</b> ${confidence}</p>
     `;
 }
 </script>
