@@ -58,7 +58,7 @@ img {
 
 <script>
 
-// Preview Image
+// Preview image
 document.getElementById("imageInput").onchange = function(e) {
     const file = e.target.files[0];
     const preview = document.getElementById("preview");
@@ -80,6 +80,7 @@ async function analyze() {
         return;
     }
 
+    document.getElementById("resultBox").style.display = "block";
     document.getElementById("result").innerText = "⏳ Scanning image...";
 
     const { data: { text } } = await Tesseract.recognize(file, 'eng');
@@ -88,47 +89,44 @@ async function analyze() {
 
     let numbers = text.match(/\d+/g)?.map(Number) || [];
 
-    if (numbers.length < 4) {
-        document.getElementById("result").innerText = "❌ Not enough numbers detected";
+    if (numbers.length === 0) {
+        document.getElementById("result").innerText = "❌ No numbers detected";
         return;
     }
 
-    // 🔥 Sort numbers (biggest first)
+    // 🔥 Sort numbers descending
     numbers.sort((a, b) => b - a);
 
-    // 🔥 Remove biggest (assumed TOTAL)
-    const detectedTotal = numbers.shift();
+    // 🔥 First = total reactions
+    let detectedTotal = numbers[0];
 
-    // 🔥 Next biggest are reactions
-    const love = numbers[0] || 0;
-    const like = numbers[1] || 0;
-    const laugh = numbers[2] || 0;
-
-    // 🔥 Use user input total OR detected total
+    // 🔥 Use input total if provided
     let inputTotal = Number(document.getElementById("total").value);
-    const total = inputTotal > 0 ? inputTotal : detectedTotal;
+    let total = inputTotal > 0 ? inputTotal : detectedTotal;
 
-    // 🔥 Safe calculation
-    const sum = love + like + laugh;
+    // 🔥 Exact reactions
+    let love = numbers[1] || 0;
+    let like = numbers[2] || 0;
+    let laugh = numbers[3] || 0;
 
-    // Allow OCR error margin
-    if (sum > total * 1.2) {
-        document.getElementById("result").innerText = "⚠️ OCR Error: Detected values inconsistent";
-        return;
-    }
+    // 🔥 Others (remaining numbers)
+    let othersArray = numbers.slice(4);
+    let others = othersArray.reduce((a, b) => a + b, 0);
 
-    const lovePercentage = (love / total) * 100;
+    // 🔥 Calculate love %
+    let lovePercentage = (love / total) * 100;
 
-    // 🔥 FINAL RULE (YOUR RULE)
+    // 🔥 Detection rule
     let result = "";
     if (lovePercentage >= 80) {
         result = "🚨 Bot Reaction Detected (Mixed Reactions)";
+    } else if (lovePercentage >= 60) {
+        result = "⚠️ Suspicious Activity";
     } else {
         result = "✅ Natural Reactions";
     }
 
-    // SHOW RESULT
-    document.getElementById("resultBox").style.display = "block";
+    // 🔥 Display result
     document.getElementById("result").innerText = result;
 
     document.getElementById("details").innerText =
@@ -141,6 +139,7 @@ ${numbers.join(", ")}
 ❤️ Love: ${love}
 👍 Like: ${like}
 😂 Laugh: ${laugh}
+✨ Other Reactions: ${others}
 
 Total: ${total}
 
