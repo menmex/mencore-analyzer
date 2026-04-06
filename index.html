@@ -1,82 +1,153 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Reaction Judge V5</title>
+<meta charset="UTF-8">
+<title>Mini Mencore</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #0a1f44, #1e90ff);
+    color: white;
+    text-align: center;
+}
+
+/* Container */
+.container {
+    margin-top: 60px;
+    padding: 20px;
+}
+
+/* Title */
+h1 {
+    font-size: 40px;
+    margin-bottom: 5px;
+}
+
+/* Subtitle */
+h2 {
+    font-size: 18px;
+    font-weight: normal;
+    margin-top: 0;
+    opacity: 0.9;
+}
+
+/* Powered */
+.powered {
+    font-size: 12px;
+    opacity: 0.6;
+    margin-bottom: 30px;
+}
+
+/* Inputs */
+input {
+    width: 250px;
+    padding: 12px;
+    margin: 8px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+}
+
+/* Button */
+button {
+    background: #00bfff;
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #009acd;
+}
+
+/* Result box */
+.result {
+    margin-top: 30px;
+    padding: 20px;
+    border-radius: 15px;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    display: inline-block;
+    min-width: 300px;
+}
+</style>
 </head>
 
-<body style="font-family:sans-serif; max-width:400px; margin:auto;">
+<body>
 
-<h2>📊 Reaction Judge</h2>
+<div class="container">
 
-<!-- WhatsApp Link -->
-<label>WhatsApp Link:</label><br>
-<input type="text" id="link" style="width:100%;"><br><br>
+<h1>Mini Mencore</h1>
+<h2>Bot Reaction Detector</h2>
+<div class="powered">Powered by Menmex</div>
 
-<!-- Confirmation Reaction Values -->
-<h3>Confirmation Reaction Values</h3>
+<input type="text" id="link" placeholder="WhatsApp Channel Link"><br>
 
-<label>❤️ Love:</label><br>
-<input type="number" id="love"><br><br>
-
-<label>👍 Like:</label><br>
-<input type="number" id="like"><br><br>
-
-<label>😂 Laugh:</label><br>
-<input type="number" id="laugh"><br><br>
-
-<label>📊 Total Reactions:</label><br>
-<input type="number" id="total"><br><br>
+<input type="number" id="love" placeholder="❤️ Love"><br>
+<input type="number" id="like" placeholder="👍 Like"><br>
+<input type="number" id="laugh" placeholder="😂 Laugh"><br>
+<input type="number" id="total" placeholder="📊 Total"><br>
 
 <button onclick="analyze()">Analyze</button>
 
-<h3>Result:</h3>
-<pre id="output"></pre>
+<div class="result" id="output"></div>
+
+</div>
 
 <script>
 function analyze() {
-  let love = parseInt(document.getElementById('love').value) || 0;
-  let like = parseInt(document.getElementById('like').value) || 0;
-  let laugh = parseInt(document.getElementById('laugh').value) || 0;
-  let total = parseInt(document.getElementById('total').value) || 0;
 
-  if (total === 0) {
-    document.getElementById('output').innerText = "❌ Enter total reactions";
-    return;
-  }
+    const link = document.getElementById("link").value;
+    const love = Number(document.getElementById("love").value);
+    const like = Number(document.getElementById("like").value);
+    const laugh = Number(document.getElementById("laugh").value);
+    const total = Number(document.getElementById("total").value);
 
-  // Calculate other reactions
-  let other = total - (love + like + laugh);
-  if (other < 0) other = 0;
+    if (!total || love > total) {
+        alert("Invalid input");
+        return;
+    }
 
-  // Calculate percentages
-  let loveP = (love / total) * 100;
-  let likeP = (like / total) * 100;
-  let laughP = (laugh / total) * 100;
-  let otherP = (other / total) * 100;
+    const others = total - (love + like + laugh);
+    const lovePercent = (love / total) * 100;
 
-  // Apply 60% rule
-  let dominant = [];
+    let result = "";
+    let confidence = "";
 
-  if (loveP >= 60) dominant.push("❤️ Love");
-  if (likeP >= 60) dominant.push("👍 Like");
-  if (laughP >= 60) dominant.push("😂 Laugh");
-  if (otherP >= 60) dominant.push("🔥 Other");
+    if (lovePercent >= 60) {
 
-  let result = "";
+        result = "🚨 BOT REACTION DETECTED";
 
-  result += "Love: " + love + "\n";
-  result += "Like: " + like + "\n";
-  result += "Laugh: " + laugh + "\n";
-  result += "Other: " + other + "\n\n";
+        let conf = lovePercent + 13;
+        if (conf > 100) conf = 100;
 
-  if (dominant.length > 0) {
-    result += "🔥 Dominant Reaction (≥60%):\n";
-    dominant.forEach(d => result += d + "\n");
-  } else {
-    result += "❌ No reaction reached 60%";
-  }
+        confidence = conf.toFixed(2) + "%";
 
-  document.getElementById('output').innerText = result;
+    } else {
+
+        result = "✅ ORGANIC REACTIONS";
+        confidence = "Natural";
+    }
+
+    document.getElementById("output").innerHTML = `
+        <h3>${result}</h3>
+
+        <p><b>Link:</b> ${link || "N/A"}</p>
+
+        <p>
+        ❤️ ${love} | 👍 ${like} | 😂 ${laugh} | 📦 ${others}
+        </p>
+
+        <p>Total: ${total}</p>
+        <p>Confidence: ${confidence}</p>
+    `;
 }
 </script>
 
